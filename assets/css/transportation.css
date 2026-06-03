@@ -1,0 +1,248 @@
+/* ─── Base ─────────────────────────────────────────────────────────── */
+body { font-size: 14px; }
+
+/* ─── Loading Overlay ─────────────────────────────────────────────── */
+.loading-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(255,255,255,.7);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+.loading-overlay.active { display: flex; }
+
+/* ─── Toast ────────────────────────────────────────────────────────── */
+.toast-container {
+    position: fixed;
+    bottom: 1rem; right: 1rem;
+    z-index: 9000;
+    display: flex; flex-direction: column; gap: .5rem;
+}
+.toast-msg {
+    min-width: 260px; max-width: 380px;
+    padding: .75rem 1rem;
+    border-radius: .375rem;
+    color: #fff;
+    font-size: .875rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    animation: slideIn .25s ease;
+}
+.toast-msg.success { background: #28a745; }
+.toast-msg.error   { background: #dc3545; }
+.toast-msg.info    { background: #17a2b8; }
+.toast-msg.warning { background: #ffc107; color: #212529; }
+@keyframes slideIn {
+    from { opacity:0; transform:translateX(2rem); }
+    to   { opacity:1; transform:translateX(0); }
+}
+
+/* ─── Navbar ───────────────────────────────────────────────────────── */
+.nav-btn { opacity:.75; }
+.nav-btn:hover, .nav-btn.active { opacity:1; background:rgba(255,255,255,.15) !important; }
+
+/* ─── KPI Cards ────────────────────────────────────────────────────── */
+.kpi-card { border-radius:.5rem; transition:box-shadow .2s; }
+.kpi-card:hover { box-shadow:0 4px 12px rgba(0,0,0,.1); }
+.kpi-num  { font-size:2rem; font-weight:700; line-height:1; }
+.kpi-lbl  { font-size:.7rem; text-transform:uppercase; color:#6c757d; letter-spacing:.04em; }
+.border-left-primary { border-left:4px solid #007bff !important; }
+.border-left-warning { border-left:4px solid #ffc107 !important; }
+.border-left-info    { border-left:4px solid #17a2b8 !important; }
+.border-left-success { border-left:4px solid #28a745 !important; }
+
+/* ─── Truck Cards (Dashboard) ──────────────────────────────────────── */
+.truck-card {
+    border-radius:.5rem;
+    border:2px solid #e0e0e0;
+    background:#fff;
+    cursor:pointer;
+    transition: transform .15s, box-shadow .15s, border-color .15s;
+}
+.truck-card:hover {
+    transform:translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,.12);
+}
+.truck-card.phase-1 { border-left:5px solid #ffc107; }
+.truck-card.phase-2 { border-left:5px solid #17a2b8; }
+.truck-card.phase-3 { border-left:5px solid #28a745; }
+.truck-card.phase-4 { border-left:5px solid #6c757d; }
+
+.truck-phase-badge {
+    font-size:.65rem; font-weight:700;
+    padding:.2rem .5rem;
+    border-radius:999px;
+    text-transform:uppercase; letter-spacing:.05em;
+}
+.phase-1 .truck-phase-badge { background:#fff3cd; color:#856404; }
+.phase-2 .truck-phase-badge { background:#d1ecf1; color:#0c5460; }
+.phase-3 .truck-phase-badge { background:#d4edda; color:#155724; }
+.phase-4 .truck-phase-badge { background:#e2e3e5; color:#383d41; }
+
+.truck-carrier  { font-size:.75rem; color:#6c757d; }
+.truck-gate-lbl { font-size:.7rem; font-weight:700; text-transform:uppercase; color:#6c757d; }
+.truck-gate-val { font-size:1.1rem; font-weight:700; color:#28a745; }
+
+/* ─── Phase Progress Bar ───────────────────────────────────────────── */
+.phase-progress {
+    display:flex;
+    align-items:center;
+    background:#fff;
+    border-radius:.5rem;
+    padding:.75rem 1.5rem;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);
+}
+.phase-step {
+    display:flex; flex-direction:column; align-items:center;
+    flex:0 0 auto; min-width:50px;
+}
+.step-num {
+    width:36px; height:36px;
+    border-radius:50%;
+    background:#e9ecef; color:#6c757d;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:.9rem;
+    transition:background .3s, color .3s;
+}
+.step-lbl {
+    font-size:.65rem; color:#6c757d; margin-top:.3rem;
+    text-transform:uppercase; letter-spacing:.04em;
+}
+.phase-connector {
+    flex:1; height:3px;
+    background:#e9ecef; margin:0 .25rem;
+    transition:background .3s;
+}
+.phase-step.done   .step-num { background:#28a745; color:#fff; }
+.phase-step.active .step-num { background:#007bff; color:#fff; box-shadow:0 0 0 4px rgba(0,123,255,.25); }
+.phase-connector.done { background:#28a745; }
+
+/* ─── Inspection Checklist ─────────────────────────────────────────── */
+.inspection-checklist { display:flex; flex-direction:column; gap:.5rem; }
+
+.check-item {
+    display:flex; align-items:center; gap:.75rem;
+    padding:.6rem .75rem;
+    border-radius:.375rem;
+    background:#fff;
+    border:1.5px solid #dee2e6;
+    cursor:pointer;
+    transition:border-color .2s, background .2s;
+    user-select:none;
+}
+.check-item:hover { border-color:#adb5bd; }
+.check-item.checked {
+    border-color:#28a745;
+    background:#f0fff4;
+}
+.check-btn {
+    width:28px; height:28px;
+    border-radius:50%;
+    background:#f8d7da; color:#842029;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; font-size:.75rem;
+    transition:background .2s, color .2s;
+}
+.check-item.checked .check-btn {
+    background:#d4edda; color:#155724;
+}
+.check-label { font-size:.875rem; }
+
+/* ─── Phase 3 Status Row ───────────────────────────────────────────── */
+.status-row { display:flex; align-items:center; gap:.5rem; }
+.status-icon { flex-shrink:0; }
+
+/* ─── Gate Display ─────────────────────────────────────────────────── */
+.gate-display { min-height:100px; display:flex; flex-direction:column; justify-content:center; }
+
+/* ─── Schedule List ────────────────────────────────────────────────── */
+.schedule-item {
+    padding:.6rem .75rem;
+    border-radius:.375rem;
+    border:1.5px solid #dee2e6;
+    margin-bottom:.5rem;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+}
+.schedule-item:hover { border-color:#007bff; background:#f8f9ff; }
+.schedule-item.active { border-color:#007bff; background:#e8f0fe; }
+.schedule-item.cancelled { opacity:.55; background:#f8f9fa; cursor:default; }
+
+.schedule-carrier { font-weight:600; font-size:.875rem; }
+.schedule-window  { font-size:.75rem; color:#6c757d; }
+.schedule-orders  { font-size:.7rem; color:#6c757d; }
+
+/* ─── Order List in Schedule ───────────────────────────────────────── */
+.order-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:.4rem .5rem;
+    border-radius:.25rem;
+    border:1px solid #dee2e6;
+    margin-bottom:.35rem;
+    background:#fff;
+}
+.order-pio-badge {
+    font-size:.65rem; padding:.15rem .4rem;
+    border-radius:999px;
+    background:#d4edda; color:#155724;
+    font-weight:700;
+}
+.order-no-pio {
+    font-size:.65rem; padding:.15rem .4rem;
+    border-radius:999px;
+    background:#f8d7da; color:#842029;
+    font-weight:700;
+}
+
+/* ─── Audit / History Cards ────────────────────────────────────────── */
+.history-item {
+    display:flex; gap:.6rem;
+    padding:.5rem;
+    border-left:3px solid #dee2e6;
+    margin-bottom:.5rem;
+    font-size:.8rem;
+}
+.history-item.approved { border-left-color:#28a745; }
+.history-item.rejected { border-left-color:#dc3545; }
+
+/* ─── DataTables ───────────────────────────────────────────────────── */
+table.dataTable thead th { font-size:.75rem; white-space:nowrap; }
+table.dataTable tbody td { font-size:.8rem; vertical-align:middle; }
+
+/* ─── Status Badges ────────────────────────────────────────────────── */
+.badge-phase1 { background:#ffc107; color:#212529; }
+.badge-phase2 { background:#17a2b8; color:#fff; }
+.badge-phase3 { background:#28a745; color:#fff; }
+.badge-phase4 { background:#6c757d; color:#fff; }
+.badge-completed { background:#155724; color:#fff; }
+.badge-cancelled  { background:#dc3545; color:#fff; }
+
+/* ─── Waiting Zone ─────────────────────────────────────────────────── */
+.badge-waiting { background:#e67e22; color:#fff; }
+.truck-card.phase-waiting { border-left:5px solid #e67e22; }
+.phase-waiting .truck-phase-badge { background:#fdebd0; color:#784212; }
+
+/* ─── Photo Evidence Grid ──────────────────────────────────────────── */
+.photo-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+}
+.photo-thumb {
+    display: block;
+    width: 72px; height: 72px;
+    border-radius: .25rem;
+    overflow: hidden;
+    border: 1.5px solid #dee2e6;
+    transition: border-color .15s;
+    flex-shrink: 0;
+}
+.photo-thumb:hover { border-color: #007bff; }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ─── Responsive ───────────────────────────────────────────────────── */
+@media (max-width:768px) {
+    .phase-progress { padding:.5rem; }
+    .step-num { width:28px; height:28px; font-size:.75rem; }
+    .kpi-num  { font-size:1.5rem; }
+}
