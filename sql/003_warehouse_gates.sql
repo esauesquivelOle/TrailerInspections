@@ -1,10 +1,8 @@
 -- ============================================================================
 -- 003_warehouse_gates.sql
 -- Warehouse: gate blocking (safety) + orders assigned to the truck at the gate
--- Run on: [OLEspresso].[dbo] with a db_owner account (IIS identity has no DDL)
+-- Run on the module database with an account that can create tables (db_owner)
 -- ============================================================================
-USE [OLEspresso];
-GO
 
 -- ─── Gate block status ───────────────────────────────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM sys.columns

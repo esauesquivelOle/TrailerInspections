@@ -3,7 +3,7 @@
 class GateRepository
 {
     private $cn;
-    private string $DB = "[OLEspresso].[dbo]";
+    private string $DB = "[dbo]";   // tables live in the database of the connection
     private string $T_GAT;
     private string $T_ASN;
     private string $T_TRK;

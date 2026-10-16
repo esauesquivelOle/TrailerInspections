@@ -1,6 +1,10 @@
 # Files uploaded at runtime
 uploads/*
 !uploads/.htaccess
+!uploads/web.config
+
+# Server-specific settings (template: config.sample.php)
+/config.php
 
 # Local / editor
 *.log

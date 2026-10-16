@@ -2,10 +2,8 @@
 -- 001_create_transportation_tables.sql
 -- Módulo de Transportación — OCDS Platform
 -- Tablas para el flujo completo de recepción, inspección y carga de tráileres
--- Run on: [OLEspresso].[dbo]
+-- Run on the module database with an account that can create tables (db_owner)
 -- ============================================================================
-USE [OLEspresso];
-GO
 
 -- ─── Gate Catalog ────────────────────────────────────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = N'transp_Gate')

@@ -3,7 +3,7 @@
 class ScheduleRepository
 {
     private $cn;
-    private string $DB = "[OLEspresso].[dbo]";
+    private string $DB = "[dbo]";   // tables live in the database of the connection
     private string $T_SCH;
     private string $T_ORD;
     private string $T_BIO;

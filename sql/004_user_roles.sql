@@ -2,10 +2,8 @@
 -- 004_user_roles.sql
 -- Role-based locks: who does each step of the Transportation flow.
 -- A user can hold several roles. No role = view only.
--- Run on: [OLEspresso].[dbo] with a db_owner account (IIS identity has no DDL)
+-- Run on the module database with an account that can create tables (db_owner)
 -- ============================================================================
-USE [OLEspresso];
-GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = N'transp_UserRole')
 BEGIN
@@ -21,10 +19,7 @@ BEGIN
 END
 GO
 
--- Module owner starts as administrator so roles can be handed out from the UI
-IF NOT EXISTS (SELECT 1 FROM [dbo].[transp_UserRole] WHERE [Username] = N'eesquivel' AND [Role] = N'ADMIN')
-    INSERT INTO [dbo].[transp_UserRole] ([Username], [Role], [AssignedBy]) VALUES (N'eesquivel', N'ADMIN', N'migration-004');
-GO
+-- First administrator: php tools/grant_role.php <username> ADMIN
 
 PRINT '=== Migration 004 complete ===';
 GO

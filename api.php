@@ -5,6 +5,7 @@ require_once(__DIR__ . "/src/Support/json.php");
 require_once(__DIR__ . "/src/Support/auth.php");
 require_once(__DIR__ . "/src/Support/i18n.php");
 require_once(__DIR__ . "/src/Support/csrf.php");
+require_once(__DIR__ . "/src/Support/config.php");
 require_once(__DIR__ . "/src/Support/db.php");
 require_once(__DIR__ . "/src/Support/permissions.php");
 require_once(__DIR__ . "/src/Repository/ScheduleRepository.php");
@@ -356,7 +357,8 @@ try {
         $ext     = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         if (!in_array($ext, $allowed, true)) json_out(false, transp_t('api.fileType'), null, 422);
 
-        $uploadDir  = 'E:/Atlanta/safety/inspections/';
+        $uploadDir  = transp_photo_dir();
+        if (!is_dir($uploadDir)) @mkdir($uploadDir, 0775, true);
         $stored     = 'INS_' . $inspectionId . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
         $destPath   = $uploadDir . $stored;
 
@@ -383,7 +385,7 @@ try {
         $photo = $insRepo->getPhotoById($photoId);
         if (!$photo) { http_response_code(404); exit(transp_t('api.photoNotFound')); }
 
-        $path = 'E:/Atlanta/safety/inspections/' . $photo['StoredFileName'];
+        $path = transp_photo_dir() . basename($photo['StoredFileName']);
         if (!file_exists($path)) { http_response_code(404); exit(transp_t('api.fileNotFound')); }
 
         $mime = mime_content_type($path) ?: 'image/jpeg';

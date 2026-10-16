@@ -1,10 +1,8 @@
 -- ============================================================================
 -- 002_add_photos_waiting_zone.sql
 -- Agrega tabla de fotos de inspección y campos de zona de espera en tráiler
--- Run on: [OLEspresso].[dbo]
+-- Run on the module database with an account that can create tables (db_owner)
 -- ============================================================================
-USE [OLEspresso];
-GO
 
 -- ─── Fotos de inspección (evidencia de rechazo) ──────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = N'transp_InspectionPhoto')

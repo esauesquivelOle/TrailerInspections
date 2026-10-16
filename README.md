@@ -3,15 +3,15 @@
 Control del ciclo de vida de cada camión en planta: llegada del conductor, inspección del tráiler,
 asignación de gate y órdenes por Almacén, carga por Shipping y cierre por Logística.
 
-- **URL:** `/proyectos/Inspections/index.php` (sitio CDS_Expresso, IIS)
-- **Base de datos:** SQL Server `OMFGENSQL-V` / `OLEspresso`, tablas `transp_*`
+- **URL:** `<portal>/proyectos/Inspections/index.php` (IIS)
+- **Base de datos:** SQL Server, tablas `transp_*` en el esquema `dbo` de la base que define la conexión del portal
 - **Stack:** PHP 8.3 + `sqlsrv`, Bootstrap 4.5, jQuery 3.5, DataTables 1.10, SheetJS 0.18.5 (carga bajo demanda)
 - **Idiomas:** inglés por defecto, español con el selector **EN | ES**
 
-> **Este repositorio es solo el módulo.** Se despliega dentro del sitio CDS_Expresso, en
-> `<sitio>/proyectos/Inspections/`, y usa dos archivos del sitio que **no** están aquí:
+> **Este repositorio es solo el módulo.** Se despliega dentro de un portal PHP, en
+> `<portal>/proyectos/Inspections/`, y usa dos archivos del portal que **no** están aquí:
 > `includes/config.ini.php` (configuración y ruta de sesiones) e `includes/clases/conexion.php`
-> (`$serverName` y `$connectionInfo` para `sqlsrv`). También usa el login del sitio (`/login.php`) y su sesión
+> (`$serverName` y `$connectionInfo` para `sqlsrv`). También usa el login del portal (`/login.php`) y su sesión
 > (`$_SESSION['user_name']`, `user_firstname`, `user_lastname`, `user_login_status`).
 
 ---
@@ -55,7 +55,8 @@ Reglas que valida el servidor (no solo la pantalla):
 ```
 proyectos/Inspections/
 ├── index.php                  Página única (vistas: Dashboard, Truck, Schedules, Warehouse, Reports, Roles)
-├── api.php                    API JSON: ?action=… (GET lectura, POST escritura con CSRF)
+├── api.php                    API JSON: ?action=… (GET lectura, POST escritura)
+├── config.sample.php          Plantilla de configuración del servidor (copiar a config.php)
 ├── assets/
 │   ├── css/transportation.css Tema OCDS (variables --ocds-*), almacén, candados, sincronización
 │   └── js/transportation.js   Toda la lógica del cliente
@@ -63,8 +64,9 @@ proyectos/Inspections/
 │   ├── Lang/en.php, es.php    Textos (mismas llaves en ambos archivos)
 │   ├── Repository/            Acceso a datos: Schedule, Truck, Inspection, Gate, Report
 │   └── Support/
-│       ├── auth.php           Sesión del sitio y login
-│       ├── csrf.php           Token CSRF
+│       ├── auth.php           Sesión y login del portal
+│       ├── config.php         Lee config.php / config.sample.php
+│       ├── csrf.php           Validación de peticiones POST
 │       ├── db.php             Conexión sqlsrv (UTF-8)
 │       ├── i18n.php           transp_t() / transp_e(), cookie de idioma
 │       ├── json.php           json_out()
@@ -72,6 +74,7 @@ proyectos/Inspections/
 ├── sql/                       Migraciones 001–004 (correr en orden)
 └── tools/                     Scripts CLI (no accesibles por web)
     ├── run_migration.php      Ejecuta un .sql separado por GO
+    ├── grant_role.php         Asigna un rol (por ejemplo, el primer Administrador)
     └── seed_test_schedules.php Datos de prueba (schedules y órdenes TEST)
 ```
 
@@ -81,8 +84,8 @@ proyectos/Inspections/
 
 ### 3.1 Base de datos
 
-La identidad de IIS (`OMF\OMFREPORTS-V$`) solo tiene `db_datareader` y `db_datawriter`: **no puede crear tablas ni columnas**.
-Las migraciones se corren una vez con una cuenta **db_owner** desde la línea de comandos:
+Normalmente la identidad del sitio en IIS solo lee y escribe datos (`db_datareader` / `db_datawriter`) y **no puede crear tablas ni columnas**.
+Por eso las migraciones se corren una vez, desde la línea de comandos, con una cuenta **db_owner** sobre la base que usa la conexión del portal:
 
 ```bash
 cd proyectos/Inspections/tools
@@ -93,23 +96,39 @@ php run_migration.php ../sql/004_user_roles.sql
 ```
 
 Todas son idempotentes (`IF NOT EXISTS`), así que se pueden volver a correr sin problema.
+Ninguna trae el nombre de la base: las tablas se crean en la base de la conexión.
+
+Después, el primer Administrador del módulo:
+
+```bash
+php grant_role.php <usuario> ADMIN
+```
 
 | Migración | Contenido |
 |---|---|
 | 001 | Gates (45), órdenes BI, schedules, camiones, inspecciones, asignaciones de gate, auditoría |
 | 002 | Fotos de inspección y zona de espera |
 | 003 | Bloqueo de gates (`transp_Gate.IsBlocked…`), `transp_GateBlockLog`, órdenes por camión (`transp_ScheduleOrder.TruckID`) |
-| 004 | `transp_UserRole` (varios roles por usuario) y `eesquivel` como Administrador |
+| 004 | `transp_UserRole` (varios roles por usuario) |
 
-### 3.2 Fotos de inspección
+### 3.2 Configuración del servidor (`config.php`)
 
-Se guardan fuera del sitio, en `E:/Atlanta/safety/inspections/`, y se sirven con `api.php?action=view_inspection_photo`.
-La carpeta debe existir y la identidad de IIS necesita permiso de escritura. El límite es 15 MB y se aceptan jpg, png, gif, webp y heic.
+Copiar `config.sample.php` a `config.php` y ajustarlo. `config.php` **no se sube a Git**.
+
+| Clave | Uso | Valor por defecto |
+|---|---|---|
+| `photo_dir` | Carpeta de fotos de inspección | `uploads/inspections/` dentro del módulo |
+
+Recomendaciones para las fotos:
+- Usar una carpeta **fuera del sitio web**.
+- La identidad de IIS necesita permiso de escritura en ella.
+- Las fotos se sirven solo a través de `api.php?action=view_inspection_photo`. Si se usa la carpeta por defecto, `uploads/web.config` bloquea el acceso directo.
+- Límite de 15 MB; se aceptan jpg, png, gif, webp y heic.
 
 ### 3.3 Requisitos del servidor
 
 - PHP 8.3 con la extensión `sqlsrv` (ODBC Driver 17).
-- `includes/config.ini.php` y `includes/clases/conexion.php` del sitio (Windows Authentication, sin usuario ni contraseña en el código).
+- `includes/config.ini.php` e `includes/clases/conexion.php` del portal. El módulo no guarda credenciales de base de datos.
 - Acceso desde el navegador a los CDN: code.jquery.com, cdn.jsdelivr.net, cdnjs.cloudflare.com, maxcdn.bootstrapcdn.com, cdn.datatables.net y Google Fonts (Nunito).
 
 ---
@@ -225,7 +244,7 @@ El script usa la misma lógica que la importación de Excel (`ScheduleRepository
 - **Transacciones**: la asignación de gate y órdenes, la importación y los roles van en `sqlsrv_begin_transaction`.
 - **Auditoría**: toda acción sobre camiones, gates y roles escribe en `transp_AuditLog`, y eso también dispara la sincronización en vivo.
 - **Caché del navegador**: CSS y JS se cargan con `?v=filemtime`, así que al desplegar no hace falta limpiar caché.
-- **Pendiente**: la carpeta `uploads/` tiene un `.htaccess` que IIS no lee. Hoy no se usa (las fotos van a `E:`); si se llegara a usar, protegerla con `web.config`.
+- **Nombre de la base**: el código no lo menciona. Los repositorios usan `[dbo].[transp_*]` sobre la base de la conexión del portal.
 
 ---
 
@@ -248,3 +267,7 @@ El script usa la misma lógica que la importación de Excel (`ScheduleRepository
   - Se perdían el % de avance y las notas de las órdenes.
   - Faltaba UTF-8 en la conexión.
   - Se podía confirmar el gate de un camión sin gate.
+- Portabilidad para migrar a otro portal:
+  - Sin nombre de servidor ni de base de datos en el código, las migraciones ni la documentación.
+  - Carpeta de fotos en `config.php`.
+  - Primer Administrador con `tools/grant_role.php`.
