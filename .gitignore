@@ -1,0 +1,9 @@
+# Files uploaded at runtime
+uploads/*
+!uploads/.htaccess
+
+# Local / editor
+*.log
+.vscode/
+.idea/
+Thumbs.db

@@ -43,6 +43,37 @@ class TruckRepository
         return $this->fetchAll($stmt);
     }
 
+    // ─── Warehouse ───────────────────────────────────────────────────────────
+
+    /**
+     * Trucks the warehouse works with:
+     *  - ready:    Phase 3 (inspection approved) with no active gate — includes earlier days still waiting
+     *  - incoming: today's trucks still in check-in / inspection / waiting zone (next in line)
+     */
+    public function listWarehouseQueue(string $date): array
+    {
+        $sql = "SELECT t.[TruckID], t.[TruckNumber], t.[TrailerNumber], t.[CarrierName], t.[DriverName],
+                       t.[Status], t.[TruckDate], t.[CreatedAt], t.[ScheduleID], t.[WaitingZone],
+                       s.[WindowStart], s.[WindowEnd], s.[TruckType],
+                       (SELECT MAX([InspectedAt]) FROM {$this->DB}.[transp_Inspection]
+                        WHERE [TruckID] = t.[TruckID] AND [Result]='APPROVED') AS [ApprovedAt],
+                       (SELECT COUNT(*) FROM {$this->DB}.[transp_ScheduleOrder] so
+                        WHERE so.[ScheduleID] = t.[ScheduleID]) AS [ScheduleOrders],
+                       (SELECT COUNT(*) FROM {$this->DB}.[transp_ScheduleOrder] so
+                        WHERE so.[ScheduleID] = t.[ScheduleID] AND so.[HasPio] = 1 AND so.[TruckID] IS NULL) AS [OrdersReady],
+                       (SELECT TOP 1 ga.[LoadingClosedAt] FROM {$this->DB}.[transp_GateAssignment] ga
+                        WHERE ga.[TruckID] = t.[TruckID] AND ga.[IsActive] = 1) AS [LoadingClosedAt]
+                FROM {$this->T_TRK} t
+                LEFT JOIN {$this->T_SCH} s ON s.[ScheduleID] = t.[ScheduleID]
+                WHERE (t.[Status] = 'Phase3' AND t.[TruckDate] <= ?
+                       AND NOT EXISTS (SELECT 1 FROM {$this->DB}.[transp_GateAssignment] ga
+                                       WHERE ga.[TruckID] = t.[TruckID] AND ga.[IsActive] = 1))
+                   OR (t.[Status] IN ('Phase1','Phase2','Phase2_Waiting') AND t.[TruckDate] = ?)
+                ORDER BY CASE WHEN t.[Status]='Phase3' THEN 0 ELSE 1 END, t.[CreatedAt]";
+        $stmt = sqlsrv_query($this->cn, $sql, [$date, $date]);
+        return $this->fetchAll($stmt);
+    }
+
     public function listTrucksByDateRange(string $dateFrom, string $dateTo, array $filters = []): array
     {
         $where  = "WHERE t.[TruckDate] BETWEEN ? AND ?";

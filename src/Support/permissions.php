@@ -1,51 +1,62 @@
 <?php
-// Profiles with full (admin) access to the Transportation module
-define('TRANSP_ADMIN_PROFILES', ['Administrator', 'VIP', 'Support', 'TranspSupervisor']);
+/**
+ * Role-based locks for the Transportation module.
+ * Each step of the flow belongs to one role; ADMIN and SUPERVISOR can cover any step.
+ * Users with no role can only look (view only).
+ */
 
-// Profiles per functional role
-define('TRANSP_LOGISTICA_PROFILES',  ['TranspLogistica',  'TranspSupervisor', 'Administrator', 'VIP', 'Support']);
-define('TRANSP_SHIPPING_PROFILES',   ['TranspShipping',   'TranspSupervisor', 'Administrator', 'VIP', 'Support']);
-define('TRANSP_SECURITY_PROFILES',   ['TranspSeguridad',  'TranspInspector',  'TranspSupervisor', 'Administrator', 'VIP', 'Support']);
-define('TRANSP_INSPECTOR_PROFILES',  ['TranspInspector',  'TranspSeguridad',  'TranspSupervisor', 'Administrator', 'VIP', 'Support']);
+define('TRANSP_ROLES', ['ADMIN', 'SUPERVISOR', 'SECURITY', 'INSPECTOR', 'LOGISTICS', 'WAREHOUSE', 'SHIPPING']);
 
-function transp_get_profile($cn, string $username): string {
-    $sql  = "SELECT TOP 1 [ProfileName] FROM [AppWithProfile]
-             WHERE [app_name] = 'Transportation' AND [username] = ?";
-    $stmt = sqlsrv_query($cn, $sql, [$username]);
-    if (!$stmt) return '';
-    $row  = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-    sqlsrv_free_stmt($stmt);
-    return $row['ProfileName'] ?? '';
+// Capability → roles that own it (ADMIN and SUPERVISOR are added automatically)
+define('TRANSP_CAPS', [
+    'canSecurity'    => ['SECURITY'],                          // Phase 1: check-in, advance to inspection
+    'canInspect'     => ['INSPECTOR'],                         // Phase 2: inspections + photos
+    'canYard'        => ['SECURITY', 'INSPECTOR'],             // Phase 2: waiting / repair zone
+    'canLogistica'   => ['LOGISTICS'],                         // Schedules, orders, import, Phase 4 closeout, cancel
+    'canWarehouse'   => ['WAREHOUSE'],                         // Gate blocks, gate + order assignment
+    'canShipping'    => ['SHIPPING'],                          // Confirm at gate, validate orders, close loading
+    'canReports'     => ['LOGISTICS', 'WAREHOUSE', 'SHIPPING'],
+    'canManageRoles' => [],                                    // ADMIN only
+]);
+
+// Profiles from AppWithProfile (app 'Transportation') still count, mapped to the new roles
+define('TRANSP_LEGACY_PROFILES', [
+    'Administrator'    => 'ADMIN',      'VIP'             => 'ADMIN',     'Support'         => 'ADMIN',
+    'TranspSupervisor' => 'SUPERVISOR', 'TranspSeguridad' => 'SECURITY',  'TranspInspector' => 'INSPECTOR',
+    'TranspLogistica'  => 'LOGISTICS',  'TranspWarehouse' => 'WAREHOUSE', 'TranspShipping'  => 'SHIPPING',
+]);
+
+function transp_get_roles($cn, string $username): array {
+    $roles = [];
+    $stmt  = sqlsrv_query($cn, "SELECT [Role] FROM [transp_UserRole] WHERE [Username] = ?", [$username]);
+    if ($stmt) {
+        while ($r = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) $roles[] = $r['Role'];
+        sqlsrv_free_stmt($stmt);
+    }
+    $stmt = sqlsrv_query($cn, "SELECT [ProfileName] FROM [AppWithProfile] WHERE [app_name] = 'Transportation' AND [username] = ?", [$username]);
+    if ($stmt) {
+        while ($r = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            if (isset(TRANSP_LEGACY_PROFILES[$r['ProfileName']])) $roles[] = TRANSP_LEGACY_PROFILES[$r['ProfileName']];
+        }
+        sqlsrv_free_stmt($stmt);
+    }
+    // Known roles only, in canonical order
+    return array_values(array_intersect(TRANSP_ROLES, array_unique($roles)));
 }
 
-function transp_is_admin(string $profile): bool {
-    // No profile assigned = full access until roles are configured
-    return $profile === '' || in_array($profile, TRANSP_ADMIN_PROFILES, true);
+function transp_build_permissions(array $roles): array {
+    $isAdmin = in_array('ADMIN', $roles, true);
+    $super   = $isAdmin || in_array('SUPERVISOR', $roles, true);
+    $perms   = ['roles' => $roles, 'isAdmin' => $super, 'isViewer' => !$roles];
+    foreach (TRANSP_CAPS as $cap => $owners) {
+        $perms[$cap] = $cap === 'canManageRoles' ? $isAdmin : ($super || (bool)array_intersect($roles, $owners));
+    }
+    return $perms;
 }
 
-function transp_can_logistica(string $profile): bool {
-    return $profile === '' || in_array($profile, TRANSP_LOGISTICA_PROFILES, true);
-}
-
-function transp_can_shipping(string $profile): bool {
-    return $profile === '' || in_array($profile, TRANSP_SHIPPING_PROFILES, true);
-}
-
-function transp_can_security(string $profile): bool {
-    return $profile === '' || in_array($profile, TRANSP_SECURITY_PROFILES, true);
-}
-
-function transp_can_inspect(string $profile): bool {
-    return $profile === '' || in_array($profile, TRANSP_INSPECTOR_PROFILES, true);
-}
-
-function transp_build_permissions(string $profile): array {
-    return [
-        'profile'       => $profile,
-        'isAdmin'       => transp_is_admin($profile),
-        'canLogistica'  => transp_can_logistica($profile),
-        'canShipping'   => transp_can_shipping($profile),
-        'canSecurity'   => transp_can_security($profile),
-        'canInspect'    => transp_can_inspect($profile),
-    ];
+// For lock messages in the UI: which roles own each capability
+function transp_cap_owners(): array {
+    $out = [];
+    foreach (TRANSP_CAPS as $cap => $owners) $out[$cap] = $owners ?: ['ADMIN'];
+    return $out;
 }

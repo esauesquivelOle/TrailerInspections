@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__ . "/i18n.php");
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 function csrf_token(): string {
@@ -12,6 +13,6 @@ function csrf_validate_or_fail(): void {
     $token        = $_POST['csrf_token'] ?? (getallheaders()['X-Csrf-Token'] ?? '');
     $sessionToken = $_SESSION['csrf_token'] ?? '';
     if (!$token || !$sessionToken || !hash_equals($sessionToken, $token)) {
-        json_out(false, "Token de seguridad inválido.", null, 400);
+        json_out(false, transp_t('api.csrfInvalid'), null, 400);
     }
 }
